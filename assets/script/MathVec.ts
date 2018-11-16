@@ -1,8 +1,8 @@
 /*
  * @Author: AK-12
  * @Date: 2018-11-15 23:36:24
- * @Last Modified by:   AK-12
- * @Last Modified time: 2018-11-15 23:36:24
+ * @Last Modified by: AK-12
+ * @Last Modified time: 2018-11-16 09:42:29
  */
 /**
  * 两点相减
@@ -27,3 +27,6 @@ export function checkArray<Type>(
     }
   }
 }
+
+export let isIn = (v: number, range: cc.Vec2): boolean =>
+  v < range.y && v > range.x
