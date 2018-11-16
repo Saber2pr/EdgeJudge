@@ -2,12 +2,17 @@
  * @Author: AK-12
  * @Date: 2018-11-15 23:36:37
  * @Last Modified by: AK-12
- * @Last Modified time: 2018-11-16 11:37:35
+ * @Last Modified time: 2018-11-16 11:41:39
  */
 import { reduceVec2, isIn } from './MathVec'
 import { toWPos, toSize, toBlack, toWhite, toRed } from './NodeVec'
 import Changed from './Changed'
-
+/**
+ *边界检测
+ *
+ * @export
+ * @class EdgeJudger
+ */
 export default class EdgeJudger {
   private moveNode: cc.Node
   private staticNode: cc.Node[]
