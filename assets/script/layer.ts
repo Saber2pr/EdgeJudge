@@ -1,5 +1,4 @@
 const { ccclass, property } = cc._decorator
-// import NodeProxy from './NodeProxy'
 import EdgeJudger from './EdgeJudger'
 import NodeProxy from './NodeProxy'
 
