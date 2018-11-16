@@ -2,7 +2,7 @@
  * @Author: AK-12
  * @Date: 2018-11-15 23:36:37
  * @Last Modified by: AK-12
- * @Last Modified time: 2018-11-16 13:50:28
+ * @Last Modified time: 2018-11-16 21:21:26
  */
 import { reduceVec2, isIn, addMax, addMin, getQuad, getAround } from './MathVec'
 import { toBlack, toWhite, toRed } from './NodeVec'
@@ -10,6 +10,7 @@ import Changed from './Changed'
 /**
  *边界检测
  *
+ * 横向节点必须位于上层
  * @export
  * @class EdgeJudger
  */
@@ -39,10 +40,20 @@ export default class EdgeJudger {
         )
       } else if (check.length === 2) {
         let dpos = pos
-        let aroundPosY = getAround(this.moveNode, check[0])
-        let aroundPosX = getAround(this.moveNode, check[1])
+        let node_buttom
+        let node_top
+        if (check[0].zIndex > check[1].zIndex) {
+          node_top = check[0]
+          node_buttom = check[1]
+        } else {
+          node_top = check[1]
+          node_buttom = check[0]
+        }
 
-        let quad = getQuad(pos, check[0], check[1])
+        let aroundPosY = getAround(this.moveNode, node_buttom)
+        let aroundPosX = getAround(this.moveNode, node_top)
+
+        let quad = getQuad(pos, node_buttom, node_top)
 
         switch (quad) {
           case 1:

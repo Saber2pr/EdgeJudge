@@ -2,224 +2,92 @@
  * @Author: AK-12
  * @Date: 2018-10-30 22:46:42
  * @Last Modified by: AK-12
- * @Last Modified time: 2018-11-16 14:07:09
+ * @Last Modified time: 2018-11-16 19:20:43
  */
+import { limitToCircle, getAngle } from './MathVec'
 import NodeProxy from './NodeProxy'
-
-let MathVec = {
-  /**
-   * 给定点和最大极径，限制点的活动范围
-   */
-  limitToCircle: function(commitPos, limitRadius) {
-    return this.getLength(commitPos) < limitRadius
-      ? commitPos
-      : this.getPos(this.getAngle(commitPos), limitRadius)
-  },
-  /**
-   * 给定点获取其极角(弧度)
-   */
-  getAngle: function(Pos) {
-    if (Pos.y > 0) {
-      return Math.acos(Pos.x / Pos.mag())
-    } else {
-      return -Math.acos(Pos.x / Pos.mag())
-    }
-  },
-  /**
-   * 给定极角，极径获取点
-   */
-  getPos: function(angle, radius) {
-    return cc.v2(radius * Math.cos(angle), radius * Math.sin(angle))
-  },
-  /**
-   * 给定点，获取极径
-   */
-  getLength: function(commitPos) {
-    return commitPos.mag()
-  }
-}
 /**
- * > MoveCtrllor.init(basicSpr, touchSpr, radius, heroSpeed)
- * > MoveCtrllor.updateCharacter(this.hero)
+ *MoveCtrllor
+ *
+ * @export
+ * @class MoveCtrllor
  */
-let MoveCtrllor = {
-  angle: null,
-  force: null,
-  status: null,
-  heroSpeed: null,
-  radius: null,
-  onload(touchSpr) {
+export default class MoveCtrllor {
+  private constructor() {}
+  private static instance: MoveCtrllor
+  static getInstance(): MoveCtrllor {
+    this.instance = !!this.instance ? this.instance : new MoveCtrllor()
+    return this.instance
+  }
+  private angle: number
+  private status: boolean
+  private radius: number
+  private heroSpeed: number
+
+  private refresh(touchNode: cc.Node) {
     this.angle = 0
-    this.force = 0
     this.status = false
-    touchSpr.node.setPosition(0, 0)
-  },
+    touchNode.setPosition(0, 0)
+  }
   /**
-   * 传入拖动盘和拖动点，实现拖动手柄
+   *传入拖动盘和拖动点，实现拖动手柄
+   *
+   * @param {cc.Node} basicNode
+   * @param {cc.Node} touchNode
+   * @param {number} [radius=25]
+   * @param {number} [heroSpeed=5]
+   * @memberof MoveCtrllor
    */
-  init: function(basicSpr, touchSpr, radius, heroSpeed) {
-    MoveCtrllor.onload(touchSpr)
-    this.radius = typeof radius === 'undefined' ? 25 : radius
-    this.heroSpeed = typeof heroSpeed === 'undefined' ? 5 : heroSpeed
-    basicSpr.node.on(
-      'touchstart',
-      function(touch) {
-        this.status = true
-      },
-      this
-    )
-    basicSpr.node.on(
-      'touchmove',
-      function(touch) {
-        //转换到局部坐标
-        let touchPosOnBasic = basicSpr.node.convertToNodeSpaceAR(
-          touch.getLocation()
-        )
-        //限制拖动范围
-        let touchPosOnBasicLimited = MathVec.limitToCircle(
-          touchPosOnBasic,
-          this.radius
-        )
-        touchSpr.node.setPosition(touchPosOnBasicLimited)
-        //保存角度
-        this.angle = MathVec.getAngle(touchPosOnBasicLimited)
-        //保存拖动力度
-        this.force = MathVec.getLength(touchPosOnBasicLimited) / this.radius
-      },
-      this
-    )
-    basicSpr.node.on(
-      'touchend',
-      function(touch) {
-        //重置状态
-        this.onload(touchSpr)
-      },
-      this
-    )
-    basicSpr.node.on(
-      'touchcancel',
-      function(touch) {
-        this.onload(touchSpr)
-      },
-      this
-    )
-  },
+  public init(
+    basicNode: cc.Node,
+    touchNode: cc.Node,
+    radius: number = 25,
+    heroSpeed: number = 5
+  ) {
+    this.refresh(touchNode)
+    this.radius = radius
+    this.heroSpeed = heroSpeed
+    basicNode.on('touchstart', () => {
+      this.status = true
+    })
+    basicNode.on('touchmove', event => {
+      let localPoint = basicNode.convertToNodeSpaceAR(event.getLocation())
+      let touch_limited = limitToCircle(localPoint, this.radius)
+      touchNode.setPosition(touch_limited)
+      this.angle = getAngle(touch_limited)
+    })
+    basicNode.on('touchend', () => {
+      this.refresh(touchNode)
+    })
+    basicNode.on('touchcancel', () => {
+      this.refresh(touchNode)
+    })
+  }
   /**
-   * 获取拖动角度(弧度)
+   *speed
+   *
+   * @memberof MoveCtrllor
    */
-  getMoveAngle() {
-    return this.angle
-  },
+  set speed(value: number) {
+    this.heroSpeed = value
+  }
+  get speed(): number {
+    return this.heroSpeed
+  }
   /**
-   * 获取拖动力度
+   *step
+   *
+   * @param {*} node
+   * @memberof MoveCtrllor
    */
-  getForce() {
-    return this.force
-  },
-  /**
-   * 获取按键状态
-   */
-  getStatus() {
-    return this.status
-  },
-  /**
-   * 角色动作响应
-   */
-  updateCharacter(node) {
-    this.directToDes(node, 'character')
-  },
-  updateCamera(node) {
-    this.directToDes(node, 'camera')
-  },
-  directToDes(node, method) {
-    if (this.getStatus() === true) {
-      let angle = this.getMoveAngle()
-      let force = this.getForce()
-      let desPos =
-        method === 'character'
-          ? cc.v2(
-              node.x + this.heroSpeed * Math.cos(angle) * force,
-              node.y + this.heroSpeed * Math.sin(angle) * force
-            )
-          : method === 'camera'
-          ? cc.v2(
-              node.x - this.heroSpeed * Math.cos(angle) * force,
-              node.y - this.heroSpeed * Math.sin(angle) * force
-            )
-          : cc.v2()
+  public step(node: cc.Node): void {
+    if (this.status === true) {
+      let angle = this.angle
+      let desPos = cc.v2(
+        node.x + this.heroSpeed * Math.cos(angle),
+        node.y + this.heroSpeed * Math.sin(angle)
+      )
       NodeProxy.heroPos = desPos
     }
   }
 }
-
-const strageyType = cc.Enum({
-  CHARACTER: 1001,
-  CAMERA: 1002
-})
-/**
- * cocos creater 接口
- */
-cc.Class({
-  extends: cc.Component,
-  properties: {
-    basicSpr: {
-      default: null,
-      type: cc.Sprite,
-      displayName: '摇杆盘'
-    },
-    touchSpr: {
-      default: null,
-      type: cc.Sprite,
-      displayName: '摇杆拖动点'
-    },
-    hero: {
-      default: null,
-      type: cc.Sprite,
-      displayName: '角色精灵',
-      visible() {
-        return this.stragey === strageyType.CHARACTER
-      }
-    },
-    camera: {
-      default: null,
-      type: cc.Sprite,
-      displayName: '背景精灵',
-      visible() {
-        return this.stragey === strageyType.CAMERA
-      }
-    },
-    radius: {
-      default: 25,
-      type: cc.Integer,
-      displayName: '拖动半径',
-      tooltip: '默认25'
-    },
-    heroSpeed: {
-      default: 5,
-      type: cc.Integer,
-      displayName: '角色移动速度',
-      tooltip: '默认5',
-      slide: true,
-      min: 1,
-      max: 15,
-      step: 1
-    },
-    stragey: {
-      type: cc.Enum(strageyType),
-      default: strageyType.CHARACTER,
-      displayName: '策略',
-      tooltip:
-        'CHARACTER: 屏幕静止, CAMERA: 屏幕移动, 注意: CAMERA策略时, 角色不能是背景子节点'
-    }
-  },
-  onLoad() {
-    MoveCtrllor.init(this.basicSpr, this.touchSpr, this.radius, this.heroSpeed)
-  },
-  update() {
-    if (this.stragey === strageyType.CHARACTER) {
-      MoveCtrllor.updateCharacter(this.hero.node)
-    } else {
-      MoveCtrllor.updateCamera(this.camera.node)
-    }
-  }
-})
