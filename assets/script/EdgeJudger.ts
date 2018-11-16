@@ -2,10 +2,10 @@
  * @Author: AK-12
  * @Date: 2018-11-15 23:36:37
  * @Last Modified by: AK-12
- * @Last Modified time: 2018-11-16 11:41:39
+ * @Last Modified time: 2018-11-16 13:50:28
  */
-import { reduceVec2, isIn } from './MathVec'
-import { toWPos, toSize, toBlack, toWhite, toRed } from './NodeVec'
+import { reduceVec2, isIn, addMax, addMin, getQuad, getAround } from './MathVec'
+import { toBlack, toWhite, toRed } from './NodeVec'
 import Changed from './Changed'
 /**
  *边界检测
@@ -31,12 +31,46 @@ export default class EdgeJudger {
       let check = this.staticNode.filter(node => {
         return this.judge(this.moveNode, node)
       })
-      if (check.length > 0) {
+      if (check.length === 1) {
         toBlack(this.moveNode)
         let pos_limited = this.getLimitedPos(pos, check[0], this.moveNode)
         this.moveNode.setPosition(
           this.getPos(this.moveNode, check[0], pos, pos_limited)
         )
+      } else if (check.length === 2) {
+        let dpos = pos
+        let aroundPosY = getAround(this.moveNode, check[0])
+        let aroundPosX = getAround(this.moveNode, check[1])
+
+        let quad = getQuad(pos, check[0], check[1])
+
+        switch (quad) {
+          case 1:
+            dpos = cc.v2(
+              addMin(pos.x, aroundPosY.x.max),
+              addMin(pos.y, aroundPosX.y.max)
+            )
+            break
+          case 2:
+            dpos = cc.v2(
+              addMax(pos.x, aroundPosY.x.min),
+              addMin(pos.y, aroundPosX.y.max)
+            )
+            break
+          case 3:
+            dpos = cc.v2(
+              addMax(pos.x, aroundPosY.x.min),
+              addMax(pos.y, aroundPosX.y.min)
+            )
+            break
+          case 4:
+            dpos = cc.v2(
+              addMin(pos.x, aroundPosY.x.max),
+              addMax(pos.y, aroundPosX.y.min)
+            )
+            break
+        }
+        this.moveNode.setPosition(dpos)
       } else {
         toWhite(this.moveNode)
         this.moveNode.setPosition(pos)
